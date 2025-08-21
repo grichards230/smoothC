@@ -2,7 +2,8 @@
 #' @description
 #' Allows the user to easily compare the gains in concordance, using both
 #' traditional C-index and the proposed new Smooth C-index, between two nested
-#' survival models.
+#' survival models. Returns concordance values and generates side-by-side plots
+#' using these values as parameters to illustrate concordance gains.
 #'
 #' @param null.vars Vector of variable names for the null model
 #' @param added.vars Vector of variable names to be added to the null model to yield the full model
@@ -11,9 +12,8 @@
 #' @param data Data frame containing time, status, and the variables specified in the null and full models
 #' @param weighted Boolean, default TRUE
 #' @param dept.censor Boolean, default FALSE
-#' @return Generates side-by-side plots comparing concordance gains by
-#' traditional C-index and proposed new Smooth C-index, as well as:
-#'  * C.df a data frame of c-indices
+#' @return Data frame of traditional C-indices and proposed new Smooth C-indices
+#' for both the null and full models.
 #'
 #' @importFrom sigmoid sigmoid
 compare_models = function(null.vars, added.vars, time, status, data,
