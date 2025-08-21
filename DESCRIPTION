@@ -1,16 +1,19 @@
 Package: smoothC
 Type: Package
-Title: What the Package Does (Title Case)
+Title: Evaluates Survival Models Using a Proposed New Concordance Metric
 Version: 0.1.0
 Authors@R: c(
     person(
-      "Jane", "Doe",
-      email = "jane@example.com",
+      "Grace", "Richards",
+      email = "garich@umich.edu",
       role = c("aut", "cre")
     )
   )
-Description: More about what it does (maybe more than one line).
-    Continuation lines should be indented.
-License: What license is it under?
+Description: *Abstract Here*
+License: GPL-2
 Encoding: UTF-8
 LazyData: true
+RoxygenNote: 7.3.2
+Imports: 
+    sigmoid,
+    survival
