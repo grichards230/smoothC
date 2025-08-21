@@ -5,3 +5,6 @@ importFrom(survival,Surv)
 importFrom(survival,concordance)
 importFrom(survival,coxph)
 importFrom(survival,survfit)
+
+export(find_C_smoothC)
+export(compare_models)
