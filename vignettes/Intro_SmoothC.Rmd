@@ -1,0 +1,76 @@
+---
+title: "A Brief Introduction to the Smooth Concordance Index"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Intro_SmoothC}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(smoothC)
+library(survival)
+```
+
+## Purpose of the smoothC package
+The concordance index, or C-index, is a popular metric of discrimination for predictive survival models. It is defined as the proportion of all comparable patient pairs in which the predicted risk and realized outcomes are concordant. However, the C-index has faced criticism for its limitations. Because this metric only measures the rank order of predicted risk, rather than the magnitude of risk differences, it is often insensitive to the addition of important predictors and can fail to adequately capture discrimination performance.  
+  
+The aim of the proposed smooth concordance metric implemented in this `smoothC` package is to address these limitations. Put simply, the smooth C-index incorporates the magnitude of risk differences into the calculation of the concordance index. This allows for an assessment of model performance across the entire risk spectrum, rather than just the rank order of predicted risk. As a result, the smooth C-index can reveal important difference in survival model discrimination performance that may be missed by the traditional C-index.
+
+## Calculating Concordance Metrics
+The `smoothC` package provides a simple function, `find_C_smoothC()`, to calculate both the traditional C-index and the smooth C-index. The function takes as input a fitted Cox proportional hazards model, and returns a list of two values: `C`, the traditional C-index, and `smooth.C`, the smooth C-index. Below is an example of how to use the function with the `veteran` dataset, available in the `survival` package. This dataset contains survival outcomes for veterans with lung cancer, as well as various predictors. Suppose you fit a model using `age` and `karno` (Karnofsky performance score) as predictors:
+
+```{r}
+model.fit = coxph(Surv(time, status) ~ age + karno, data = veteran)
+output1 = find_C_smoothC(model.fit)
+output1
+```
+The output shows that the traditional C-index, denoted $\hat{C}$, is equal to `r round(output1$C, 3)`, meaning that `r round(output1$C*100, 3)`% of comparable patient pairs are concordant. The smooth C-index, denoted $\hat\nu$, is `r round(output1$smooth.C, 3)`.  
+  
+One way to interpret this metric is as an odds ratio: the quantity $exp(\hat\nu)=$`r round(exp(output1$smooth.C), 3)` describes the change in odds of some patient $i$ failing before patient $j$ for every one unit increase in the difference in their predicted risks. In other words, if patient $i$ has a predicted risk that is one unit higher than patient $j$, then patient $i$ is `r round(exp(output1$smooth.C), 3)` times more likely to fail before patient $j$.  
+  
+Another way to interpret the smooth C-index is as a graphing parameter. By design, the metric $\hat\nu$ is the parameter of a sigmoid function mapping the risk difference of two patients against the probability of a concordant outcome between the two patients. This is illustrated by the next function in the package.
+
+## Visualizing the Smooth C-Index
+The `smoothC` package also contains the function `compare_models` function. This function compares two nested Cox PH model fits on the same data, providing the user with a comparison of concordance gains according to both the traditional C-index and the smooth C-index. It returns a data frame values for both models and both metrics, and generates side-by-side plots of risk difference vs. probability of concordant outcome.  
+  
+Below is an example of how to use the function with the same model as before. Let's compare a model with only `age` as a predictor, to the model with `age` and `karno` included:
+```{r, fig.width=5, figheight=5}
+compare_models(
+    null.vars = "age",
+    added.vars = "karno",
+    time = "time",
+    status = "status",
+    data = veteran
+)
+```
+
+Looking at the table of values, we can see that by both metrics, the addition of `karno` drastically improved the model discrimination. The graphs flesh this out with more info comparing the two:
+
+Let's look at another example using the `gbsg` dataset, also in the `survival` package. This dataset follows patients with node positive breast cancer over 5 years. Among other predictor variables, it records the variable `nodes` (number of positive lymph nodes). Pay attention to the distribution of this variable:
+
+```{r}
+hist(gbsg$nodes, main = "Distribution of `nodes`", xlab = "Number of Positive Lymph Nodes")
+```
+
+The variable `nodes` is right-skewed, with a few patients having a very high number of positive lymph nodes. The variable `grade` is categorical, with most patients having grade 2 tumors. Below, we compare a model with a few predictors to a model with `nodes` and `grade` added, to see how well we can predict time to recurrence:
+
+```{r, fig.width=5, figheight=5}
+#German breast cancer data: 
+compare_models(
+    null.vars = c("age", "meno", "er", "size"),
+    added.vars = c("nodes"),
+    time = "rfstime", 
+    status = "status", 
+    data = gbsg
+)
+```
+
+The lefthand graph suggests quite a modest gain in model discrimination ability according the traditional C-index. Generally, an increase from $58.3%$ to $65.1%$ concordant pairs would not suggest a particularly astute model. However, the smooth C-index tells a different story. However, recall that $exp(\hat\nu)$ can be interpreted as the odds ratio of failure for every one unit increase in predicted risk difference. In the base model, this odds ratio is  $exp(\hat\nu)=$`r round(exp(output1$smooth.C), 3)`; with the addition of `nodes`, this odds ratio increases to $exp(\hat\nu)=$`r round(exp(output1$smooth.C), 3)`. Moreover, look at the tails of the righthand graph: it reveals a considerably better improvement in model discrimination for large risk differences. This example illustrates how the smooth C-index, by leveraging the magnitude of risk differences rather than rank ordering, can be more sensitive to valuable model parameters.
